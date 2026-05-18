@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimodal Detector</title>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+        }
+
+        body {
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+        }
+
+        .dark .glass-card {
+            background: rgba(17, 24, 39, 0.8);
+            border-color: rgba(55, 65, 81, 0.3);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s;
+        }
+
+        .glass-input:focus {
+            border-color: #a855f7;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
+        }
+
+        .dark .glass-input {
+            background: rgba(31, 41, 55, 0.5);
+            border-color: rgba(55, 65, 81, 0.3);
+            color: white;
+        }
+
+        .dark .glass-input:focus {
+            border-color: #c084fc;
+            box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.2);
+        }
+
+        .gradient-button {
+            background: linear-gradient(135deg, #9333ea 0%, #6b21a8 100%);
+            transition: all 0.2s;
+            box-shadow: 0 10px 20px rgba(147, 51, 234, 0.3);
+        }
+
+        .gradient-button:hover {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            box-shadow: 0 15px 30px rgba(168, 85, 247, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .gradient-button:active {
+            transform: scale(0.98);
+        }
+
+        .file-upload-hover {
+            transition: all 0.3s;
+            border: 2px dashed #c084fc;
+            background: rgba(168, 85, 247, 0.05);
+        }
+
+        .dark .file-upload-hover {
+            border-color: #7c3aed;
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        .file-upload-hover:hover {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.15);
+        }
+
+        .dark .file-upload-hover:hover {
+            border-color: #c084fc;
+            background: rgba(192, 132, 252, 0.2);
+        }
+
+        .result-card-real {
+            border-left: 4px solid #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .dark .result-card-real {
+            background: rgba(34, 197, 94, 0.15);
+        }
+
+        .result-card-fake {
+            border-left: 4px solid #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .dark .result-card-fake {
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .result-card-uncertain {
+            border-left: 4px solid #eab308;
+            background: rgba(234, 179, 8, 0.1);
+        }
+
+        .dark .result-card-uncertain {
+            background: rgba(234, 179, 8, 0.15);
+        }
+
+        .prediction-real {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .dark .prediction-real {
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+        }
+
+        .prediction-fake {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .dark .prediction-fake {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .prediction-uncertain {
+            background: #fef3c7;
+            color: #854d0e;
+        }
+
+        .dark .prediction-uncertain {
+            background: rgba(234, 179, 8, 0.2);
+            color: #fde047;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // Theme toggle
+        let darkMode = localStorage.getItem('theme') === 'dark';
+
+        function toggleDarkMode() {
+            darkMode = !darkMode;
+            localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+            updateTheme();
+        }
+
+        function updateTheme() {
+            if (darkMode) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        updateTheme();
+
+        // State management
+        let activeTab = 'multimodal';
+        let multimodalImage = null;
+        let multimodalImagePreview = null;
+        let multimodalText = '';
+
+        let imageOnlyImage = null;
+        let imageOnlyImagePreview = null;
+
+        let textOnlyText = '';
+        let textOnlyFile = null;
+        let textOnlyFileName = '';
+        let textOnlyExtracted = '';
+
+        let results = {};
+        let loading = {};
+
+        function switchTab(tab) {
+            activeTab = tab;
+            render();
+        }
+
+        function handleMultimodalImageChange(file) {
+            if (file) {
+                multimodalImage = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    multimodalImagePreview = e.target.result;
+                    render();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleImageOnlyImageChange(file) {
+            if (file) {
+                imageOnlyImage = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imageOnlyImagePreview = e.target.result;
+                    render();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleTextFileChange(file) {
+            if (!file) return;
+
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!['txt', 'pdf'].includes(ext)) {
+                alert('Please upload .txt or .pdf file only');
+                return;
+            }
+
+            textOnlyFile = file;
+            textOnlyFileName = file.name;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (ext === 'txt') {
+                    const content = e.target.result;
+                    textOnlyExtracted = content;
+                    textOnlyText = content;
+                } else if (ext === 'pdf') {
+                    textOnlyExtracted = 'PDF file selected. Text will be extracted on the server when you click "Predict".';
+                }
+                render();
+            };
+
+            if (ext === 'txt') {
+                reader.readAsText(file);
+            } else {
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        async function predictMultimodal() {
+            if (!multimodalImage) {
+                alert('Please upload an image');
+                return;
+            }
+
+            if (multimodalText.trim().length < 10) {
+                alert('Please enter at least 10 characters of text');
+                return;
+            }
+
+            loading.multimodal = true;
+            render();
+
+            try {
+                const formData = new FormData();
+                formData.append('image', multimodalImage);
+                formData.append('text', multimodalText);
+
+                const response = await fetch('/predict-multimodal', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+                results.multimodal = data;
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                loading.multimodal = false;
+                render();
+            }
+        }
+
+        async function predictImageOnly() {
+            if (!imageOnlyImage) {
+                alert('Please upload an image');
+                return;
+            }
+
+            loading.image = true;
+            render();
+
+            try {
+                const formData = new FormData();
+                formData.append('file', imageOnlyImage);
+
+                const response = await fetch('/predict-image', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+                results.image = data;
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                loading.image = false;
+                render();
+            }
+        }
+
+        async function predictTextOnly() {
+            const textToPredict = textOnlyText.trim();
+
+            if (!textToPredict && !textOnlyFile) {
+                alert('Please enter text or upload a file');
+                return;
+            }
+
+            if (textToPredict && textToPredict.length < 10) {
+                alert('Please enter at least 10 characters of text');
+                return;
+            }
+
+            loading.text = true;
+            render();
+
+            try {
+                let response;
+
+                if (textOnlyFile) {
+                    const formData = new FormData();
+                    formData.append('file', textOnlyFile);
+
+                    response = await fetch('/predict-text', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                } else {
+                    response = await fetch('/predict-text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: textToPredict }),
+                    });
+                }
+
+                const data = await response.json();
+                results.text = data;
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                loading.text = false;
+                render();
+            }
+        }
+
+        function getResultCardClass(prediction) {
+            if (prediction === 'real') return 'result-card-real';
+            if (prediction === 'fake' || prediction === 'ai' || prediction === 'deepfake') return 'result-card-fake';
+            if (prediction === 'uncertain') return 'result-card-uncertain';
+            return 'result-card-real';
+        }
+
+        function getPredictionBadgeClass(prediction) {
+            if (prediction === 'real') return 'prediction-real';
+            if (prediction === 'fake' || prediction === 'ai' || prediction === 'deepfake') return 'prediction-fake';
+            if (prediction === 'uncertain') return 'prediction-uncertain';
+            return 'prediction-real';
+        }
+
+        function renderResultCard(title, prediction, confidence, probabilities) {
+            return `
+                <div class="rounded-xl p-6 ${getResultCardClass(prediction)}">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wide">
+                        ${title}
+                    </h3>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="inline-flex items-center px-4 py-2 rounded-full font-semibold text-sm ${getPredictionBadgeClass(prediction)}">
+                            ${prediction.toUpperCase()}
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Confidence</span>
+                            <span class="font-semibold text-gray-900 dark:text-white">${confidence}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500" style="width: ${confidence}%"></div>
+                        </div>
+                    </div>
+                    ${probabilities ? `
+                        <div class="space-y-2 pt-4 border-t border-gray-300 dark:border-gray-600">
+                            ${Object.entries(probabilities).map(([label, value]) => `
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-700 dark:text-gray-300 capitalize">${label}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">${value}%</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+
+            app.innerHTML = `
+                <div class="${darkMode ? 'dark' : ''} min-h-screen transition-all duration-500 ${
+                    darkMode
+                        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+                        : 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50'
+                }">
+                    <button onclick="toggleDarkMode()" class="fixed top-6 right-6 z-50 p-3 rounded-full glass-card hover:bg-white/30 dark:hover:bg-gray-800/50 transition-all duration-300 shadow-lg">
+                        ${darkMode ? '☀️' : '🌙'}
+                    </button>
+
+                    <div class="flex items-center justify-center min-h-screen px-4 py-8">
+                        <div class="w-full max-w-2xl">
+                            <div class="glass-card rounded-2xl shadow-2xl overflow-hidden border border-white/20 dark:border-gray-700/30 p-8 sm:p-10">
+                                <div class="mb-8 text-center">
+                                    <h1 class="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-purple-600 to-purple-900 dark:from-purple-400 dark:to-purple-300 bg-clip-text text-transparent mb-2" style="font-family: 'Poppins', sans-serif;">
+                                        AI/ Deepfake/ Real Detector
+                                    </h1>
+                                    <p class="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
+                                        Analyze news using advanced image & text analysis
+                                    </p>
+                                </div>
+
+                                <div class="flex border-b border-gray-200 dark:border-gray-700 -mx-8 px-8 sm:-mx-10 sm:px-10 mb-8">
+                                    ${['multimodal', 'image', 'text'].map(tab => `
+                                        <button onclick="switchTab('${tab}')" class="py-4 px-4 sm:px-6 font-medium text-sm sm:text-base relative transition-all duration-300 whitespace-nowrap ${
+                                            activeTab === tab
+                                                ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400'
+                                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
+                                        }">
+                                            ${tab === 'multimodal' ? 'Multimodal' : tab === 'image' ? 'Image Only' : 'Text Only'}
+                                        </button>
+                                    `).join('')}
+                                </div>
+
+                                ${activeTab === 'multimodal' ? `
+                                    <div class="space-y-6">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                                                📷 Upload Image
+                                            </label>
+                                            <div class="relative border-2 border-dashed border-purple-300 dark:border-purple-600 rounded-xl p-8 text-center cursor-pointer file-upload-hover transition-all duration-300 bg-purple-50/30 dark:bg-purple-900/20" onclick="document.getElementById('multimodalImageInput').click()">
+                                                <input type="file" id="multimodalImageInput" accept="image/*" style="display:none" onchange="handleMultimodalImageChange(this.files[0])">
+                                                ${multimodalImagePreview ? `
+                                                    <img src="${multimodalImagePreview}" class="max-h-48 mx-auto rounded-lg shadow-md">
+                                                ` : `
+                                                    <div class="flex flex-col items-center gap-3">
+                                                        <span style="font-size:32px">📤</span>
+                                                        <p class="text-purple-600 dark:text-purple-400 font-medium">Click or drag image here</p>
+                                                    </div>
+                                                `}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                                                ✍️ News Text
+                                            </label>
+                                            <textarea id="multimodalTextArea" placeholder="Paste the news article here..." class="w-full h-32 glass-input rounded-xl px-4 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none focus:shadow-lg focus:shadow-purple-500/20" onchange="multimodalText = this.value; render();" oninput="multimodalText = this.value;"></textarea>
+                                        </div>
+
+                                        <button onclick="predictMultimodal()" class="w-full gradient-button text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2" ${loading.multimodal ? 'disabled' : ''}>
+                                            ${loading.multimodal ? '<span>⏳ Analyzing...</span>' : '<span>Predict Multimodal</span>'}
+                                        </button>
+
+                                        ${results.multimodal ? `
+                                            <div class="space-y-4 mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                                                ${renderResultCard('Image Analysis', results.multimodal.image_prediction, results.multimodal.image_confidence, results.multimodal.image_probabilities)}
+                                                ${renderResultCard('Text Analysis', results.multimodal.text_prediction, results.multimodal.text_confidence, results.multimodal.text_probabilities)}
+                                                <div class="bg-gradient-to-r from-purple-600 to-purple-700 dark:from-purple-700 dark:to-purple-800 rounded-xl p-6 text-white shadow-lg">
+                                                    <h3 class="text-sm font-semibold text-purple-100 mb-2 uppercase tracking-wide">Final Result</h3>
+                                                    <div class="text-3xl font-bold mb-3 capitalize">${results.multimodal.final_result}</div>
+                                                    <div class="text-sm text-purple-100 mb-4">Confidence: ${results.multimodal.final_confidence}%</div>
+                                                    <div class="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-sm">
+                                                        <strong>Analysis:</strong> ${results.multimodal.reasoning}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                ` : activeTab === 'image' ? `
+                                    <div class="space-y-6">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                                                📷 Upload Image
+                                            </label>
+                                            <div class="relative border-2 border-dashed border-purple-300 dark:border-purple-600 rounded-xl p-8 text-center cursor-pointer file-upload-hover transition-all duration-300 bg-purple-50/30 dark:bg-purple-900/20" onclick="document.getElementById('imageOnlyImageInput').click()">
+                                                <input type="file" id="imageOnlyImageInput" accept="image/*" style="display:none" onchange="handleImageOnlyImageChange(this.files[0])">
+                                                ${imageOnlyImagePreview ? `
+                                                    <img src="${imageOnlyImagePreview}" class="max-h-48 mx-auto rounded-lg shadow-md">
+                                                ` : `
+                                                    <div class="flex flex-col items-center gap-3">
+                                                        <span style="font-size:32px">📤</span>
+                                                        <p class="text-purple-600 dark:text-purple-400 font-medium">Click or drag image here</p>
+                                                    </div>
+                                                `}
+                                            </div>
+                                        </div>
+
+                                        <button onclick="predictImageOnly()" class="w-full gradient-button text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2" ${loading.image ? 'disabled' : ''}>
+                                            ${loading.image ? '<span>⏳ Analyzing...</span>' : '<span>Predict Image</span>'}
+                                        </button>
+
+                                        ${results.image ? `
+                                            <div class="space-y-4 mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                                                ${renderResultCard('Image Prediction', results.image.prediction, results.image.confidence, results.image.probabilities)}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                ` : `
+                                    <div class="space-y-6">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                                                ✍️ Type or Paste Text
+                                            </label>
+                                            <textarea id="textOnlyTextArea" placeholder="Paste the news article here..." class="w-full h-40 glass-input rounded-xl px-4 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none focus:shadow-lg focus:shadow-purple-500/20" onchange="textOnlyText = this.value;" oninput="textOnlyText = this.value;"></textarea>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                                                📁 Or Upload a File
+                                            </label>
+                                            <div class="border-2 border-dashed border-purple-300 dark:border-purple-600 rounded-xl p-8 text-center cursor-pointer file-upload-hover transition-all duration-300 bg-purple-50/30 dark:bg-purple-900/20" onclick="document.getElementById('textFileInput').click()">
+                                                <input type="file" id="textFileInput" accept=".txt,.pdf" style="display:none" onchange="handleTextFileChange(this.files[0])">
+                                                <div class="flex flex-col items-center gap-3">
+                                                    <span style="font-size:32px">📤</span>
+                                                    <p class="text-purple-600 dark:text-purple-400 font-medium">Click or drag .txt/.pdf file here</p>
+                                                    ${textOnlyFileName ? `<p class="text-gray-600 dark:text-gray-400 text-sm">📄 ${textOnlyFileName}</p>` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        ${textOnlyExtracted ? `
+                                            <div class="bg-green-50/50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+                                                <p class="text-xs font-semibold text-green-700 dark:text-green-400 mb-2 uppercase tracking-wide">
+                                                    📖 Extracted Text Preview
+                                                </p>
+                                                <div class="bg-white dark:bg-gray-900 rounded-lg p-3 max-h-32 overflow-y-auto text-sm text-gray-700 dark:text-gray-300 border border-green-200 dark:border-green-800/30">
+                                                    ${textOnlyExtracted.substring(0, 300)}${textOnlyExtracted.length > 300 ? '...' : ''}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+
+                                        <button onclick="predictTextOnly()" class="w-full gradient-button text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2" ${loading.text ? 'disabled' : ''}>
+                                            ${loading.text ? '<span>⏳ Analyzing...</span>' : '<span>Predict Text</span>'}
+                                        </button>
+
+                                        ${results.text ? `
+                                            <div class="space-y-4 mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                                                ${results.text.source ? `
+                                                    <div class="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
+                                                        📍 Source: ${results.text.source === 'file' ? `File (${results.text.file_name})` : 'Manual input'}
+                                                    </div>
+                                                ` : ''}
+                                                ${renderResultCard('Text Prediction', results.text.prediction, results.text.confidence, results.text.probabilities)}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `}
+                            </div>
+
+                            <div class="text-center mt-6 text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+                                <p>🔒 All analysis is performed securely on your device & server</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        render();
+    </script>
+</body>
+</html>

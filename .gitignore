@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Uploads
+audio_uploads/
+
+# Node
+node_modules/
+dist/
+
+# Dataset
+dataset/
+datasets/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model checkpoints
+*.h5
+*.keras
+*.pkl
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment files
+.env
+
+# Vite cache
+.vite/
+
+# VS Code
+.vscode/
+
+*.csv
+*.png
+
+# Audio files
+*.wav
+*.mp3
+*.m4a
+*.ogg
+
+# Video files
+*.mp4
+*.avi
+*.mov
+*.mkv

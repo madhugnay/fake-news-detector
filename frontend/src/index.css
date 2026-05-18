@@ -1,0 +1,92 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply transition-colors duration-300;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30;
+  }
+
+  .glass-input {
+    @apply bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20 dark:border-gray-700/30 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200;
+  }
+
+  .gradient-button {
+    @apply bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:scale-95 transition-all duration-200 shadow-lg hover:shadow-xl hover:shadow-purple-500/30;
+  }
+
+  .tab-active {
+    @apply text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400;
+  }
+
+  .result-card-real {
+    @apply border-l-4 border-green-500 bg-green-50/50 dark:bg-green-900/20;
+  }
+
+  .result-card-fake {
+    @apply border-l-4 border-red-500 bg-red-50/50 dark:bg-red-900/20;
+  }
+
+  .result-card-uncertain {
+    @apply border-l-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/20;
+  }
+
+  .prediction-badge {
+    @apply inline-flex items-center px-4 py-2 rounded-full font-semibold text-sm;
+  }
+
+  .prediction-real {
+    @apply bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300;
+  }
+
+  .prediction-fake {
+    @apply bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300;
+  }
+
+  .prediction-uncertain {
+    @apply bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300;
+  }
+}
+
+/* Smooth transitions */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* File upload hover effect */
+.file-upload-hover:hover {
+  @apply border-purple-500 dark:border-purple-400 bg-purple-50/50 dark:bg-purple-900/20;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500;
+}
