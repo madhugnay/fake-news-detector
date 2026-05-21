@@ -1,24 +1,24 @@
 Flask==3.1.0
 Flask-Cors==5.0.0
 
-tensorflow-cpu==2.16.1
-keras==3.3.3
-h5py==3.11.0
+tensorflow-cpu==2.15.0
+keras==2.15.0
+h5py==3.10.0
 
-numpy==1.26.4
-scipy==1.13.1
-pandas==2.2.2
+numpy==1.24.3
+scipy==1.11.4
+pandas==2.1.4
 
 scikit-learn==1.5.1
 joblib==1.4.2
 
-opencv-python-headless==4.10.0.84
-Pillow==10.4.0
+opencv-python-headless==4.8.1.78
+Pillow==10.2.0
 
-matplotlib==3.9.2
+matplotlib==3.8.2
 seaborn==0.13.2
 
-librosa==0.10.2.post1
+librosa==0.10.1
 soundfile==0.12.1
 audioread==3.0.1
 pydub==0.25.1
