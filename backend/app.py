@@ -54,7 +54,8 @@ with open("tfidf_vectorizer.pkl", "rb") as f:
 print("Loading audio model...")
 
 audio_model = tf.keras.models.load_model(
-    r"E:\CCA\audio_model\models\audio_model.keras"
+    "audio_model/models/audio_model.keras"
+)
 )
 
 print("All models loaded successfully!")
@@ -864,5 +865,12 @@ def metrics():
 # RUN APP
 # =========================
 
-if __name__ == '__main__':
-    app.run(debug=True, use_reloader=False)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False,
+        use_reloader=False
+    )
