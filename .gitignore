@@ -44,3 +44,7 @@ Thumbs.db
 
 # Images (optional)
 *.png
+backend/results/
+*.pt
+*.pth
+*.safetensors
