@@ -2,13 +2,29 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 3000,
-    proxy: {
-      '/predict-multimodal': 'http://localhost:5000',
-      '/predict-image': 'http://localhost:5000',
-      '/predict-text': 'http://localhost:5000',
+  plugins:[react()],
+
+  server:{
+    proxy:{
+      '/predict-image':{
+        target:'http://localhost:10000',
+        changeOrigin:true
+      },
+
+      '/predict-text':{
+        target:'http://localhost:10000',
+        changeOrigin:true
+      },
+
+      '/predict-audio':{
+        target:'http://localhost:10000',
+        changeOrigin:true
+      },
+
+      '/predict-multimodal':{
+        target:'http://localhost:10000',
+        changeOrigin:true
+      }
     }
   }
 })

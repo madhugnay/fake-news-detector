@@ -1,3 +1,5 @@
+from unittest import result
+
 from flask import Flask, request, jsonify, render_template
 import numpy as np
 import os
@@ -10,7 +12,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
-from pydub import AudioSegment
 from PyPDF2 import PdfReader
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
@@ -186,89 +187,6 @@ def predict_text(text):
             "fake": round(float(probabilities[0]) * 100, 2),
             "real": round(float(probabilities[1]) * 100, 2)
         }
-    }
-
-
-# =========================
-# AUDIO PREDICTION FUNCTION
-# =========================
-
-def predict_audio_file(audio_path):
-
-    temp_image = os.path.join(
-        AUDIO_UPLOAD_FOLDER,
-        "temp_spectrogram.png"
-    )
-
-    # Load audio
-    y, sr = librosa.load(audio_path, sr=22050)
-
-    # Create mel spectrogram
-    mel_spec = librosa.feature.melspectrogram(
-        y=y,
-        sr=sr,
-        n_mels=128
-    )
-
-    # Convert to decibels
-    mel_spec_db = librosa.power_to_db(
-        mel_spec,
-        ref=np.max
-    )
-
-    # Plot
-    plt.figure(figsize=(3, 3))
-
-    librosa.display.specshow(
-        mel_spec_db,
-        sr=sr
-    )
-
-    plt.axis('off')
-
-    # Save spectrogram image
-    plt.savefig(
-        temp_image,
-        bbox_inches='tight',
-        pad_inches=0
-    )
-
-    plt.close()
-
-    # Load image
-    img = image.load_img(
-        temp_image,
-        target_size=(128, 128)
-    )
-
-    img_array = image.img_to_array(img)
-
-    img_array = img_array / 255.0
-
-    img_array = np.expand_dims(img_array, axis=0)
-
-    # Predict
-    prediction = float(
-    audio_model.predict(img_array)[0][0]
-)
-
-    if prediction > 0.5:
-        label = "real"
-        confidence = float(prediction * 100)
-    else:
-        label = "deepfake"
-        confidence = float((1 - prediction) * 100)
-
-    # Cleanup temp spectrogram
-    try:
-        os.remove(temp_image)
-    except:
-        pass
-
-    return {
-        "prediction": label,
-        "confidence": round(confidence, 2),
-        "score": float(prediction)
     }
 
 
@@ -457,7 +375,7 @@ def predict_text_route():
         return jsonify(result)
 
     except Exception as e:
-
+        print("AUDIO ROUTE ERROR:", str(e))
         return jsonify({
             "error": str(e)
         }), 500
@@ -466,11 +384,19 @@ def predict_audio(audio_path):
 
     try:
 
+        # Verify file exists
+        if not os.path.exists(audio_path):
+            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+
+        print(f"Loading audio from: {audio_path}")
+        
         # Load audio
         y, sr = librosa.load(
             audio_path,
             sr=22050
         )
+
+        print(f"Audio loaded successfully. Shape: {y.shape}, SR: {sr}")
 
         # Generate mel spectrogram
         mel_spec = librosa.feature.melspectrogram(
@@ -503,6 +429,8 @@ def predict_audio(audio_path):
 
         plt.close()
 
+        print(f"Spectrogram saved to: {spectrogram_path}")
+
         # Load image
         img = image.load_img(
             spectrogram_path,
@@ -519,9 +447,12 @@ def predict_audio(audio_path):
         )
 
         # Predict
+        print("Making audio prediction...")
         prediction = audio_model.predict(
             img_array
         )[0][0]
+
+        print(f"Raw prediction: {prediction}")
 
         confidence = float(round(
     max(prediction, 1 - prediction) * 100,
@@ -575,16 +506,12 @@ def predict_audio(audio_path):
 
     except Exception as e:
 
-        print("AUDIO PREDICTION ERROR:", str(e))
+        print("AUDIO PREDICTION ERROR:", repr(e))
+        print("Full traceback:")
+        import traceback
+        traceback.print_exc()
+        raise e
 
-        return {
-
-            "prediction": "error",
-
-            "confidence": 0,
-
-            "probabilities": {}
-        }
 # =========================
 # ROUTE: PREDICT AUDIO
 # =========================
@@ -608,41 +535,41 @@ def predict_audio_route():
                 "error": "Empty filename"
             }), 400
 
-        filename = secure_filename(file.filename)
+        # Use same approach as multimodal - save in current directory
+        audio_path = "temp_predict_audio.wav"
 
-        audio_path = os.path.join(
-            AUDIO_UPLOAD_FOLDER,
-            filename
-        )
-
+        print(f"Saving audio to: {audio_path}")
         file.save(audio_path)
-        # Convert uploaded audio to standard WAV
+        
+        # Verify file was saved
+        if not os.path.exists(audio_path):
+            return jsonify({
+                "error": "Failed to save audio file"
+            }), 500
 
-        converted_path = os.path.join(
-            AUDIO_UPLOAD_FOLDER,"converted.wav")
+        file_size = os.path.getsize(audio_path)
+        print(f"Audio file saved. Size: {file_size} bytes")
 
-        audio = AudioSegment.from_file(audio_path)
+        print("AUDIO PATH:", audio_path)
 
-        audio = audio.set_frame_rate(22050)
+        result = predict_audio(audio_path)
 
-        audio = audio.set_channels(1)
-
-        audio.export(converted_path,format="wav")
-
-        audio_path = converted_path
-
-        result = predict_audio_file(audio_path)
+        print("AUDIO RESULT:", result)
 
         # Cleanup uploaded audio
         try:
-            os.remove(audio_path)
-        except:
-            pass
+            if os.path.exists(audio_path):
+                os.remove(audio_path)
+                print(f"Cleaned up: {audio_path}")
+        except Exception as cleanup_error:
+            print(f"Cleanup error: {cleanup_error}")
 
         return jsonify(result)
 
     except Exception as e:
-
+        print("AUDIO ROUTE ERROR:", str(e))
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "error": str(e)
         }), 500
@@ -695,7 +622,7 @@ def predict_multimodal():
                 "error": "No audio selected"
             }), 400
 
-        # Temp paths
+        # Temp paths - save in current directory like audio route
         img_path = "temp_multimodal.jpg"
 
         audio_path = "temp_multimodal_audio.wav"
