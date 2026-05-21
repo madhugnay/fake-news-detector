@@ -44,10 +44,7 @@ def allowed_file(filename):
 
 print("STEP 1 START - IMAGE MODEL")
 
-image_model = load_model(
-    "xception_render.keras",
-    compile=False
-)
+image_model = load_model("xception_render.h5")
 
 print("STEP 1 DONE")
 
