@@ -38,28 +38,46 @@ def allowed_file(filename):
 # =========================
 # LOAD MODELS
 # =========================
+# =========================
+# LOAD MODELS
+# =========================
 
-print("Loading image model...")
+print("STEP 1 START - IMAGE MODEL")
+
 image_model = load_model("xception_model_v2.keras")
+
+print("STEP 1 DONE")
+
 class_names = ['ai', 'deepfake', 'real']
 
-print("Loading text models...")
+
+print("STEP 2 START - TEXT MODEL")
 
 with open("text_model.pkl", "rb") as f:
     text_classifier = pickle.load(f)
 
+print("STEP 2 DONE")
+
+
+print("STEP 3 START - TFIDF")
+
 with open("tfidf_vectorizer.pkl", "rb") as f:
     tfidf_vectorizer = pickle.load(f)
 
-print("Loading audio model...")
+print("STEP 3 DONE")
+
+
+print("STEP 4 START - AUDIO MODEL")
 
 audio_model = tf.keras.models.load_model(
     "audio_model/models/audio_model.keras"
 )
 
-print("All models loaded successfully!")
+print("STEP 4 DONE")
 
+print("ALL MODELS LOADED")
 
+print("STARTING FLASK SERVER")
 # =========================
 # FILE EXTRACTION FUNCTIONS
 # =========================
