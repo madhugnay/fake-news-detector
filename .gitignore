@@ -18,34 +18,29 @@ datasets/
 .DS_Store
 Thumbs.db
 
-# Model checkpoints
-*.h5
-*.keras
-*.pkl
-
 # Notebook checkpoints
 .ipynb_checkpoints/
 
-# Environment files
+# Environment
 .env
 
-# Vite cache
+# Vite
 .vite/
 
 # VS Code
 .vscode/
 
-*.csv
-*.png
-
-# Audio files
+# Audio
 *.wav
 *.mp3
 *.m4a
 *.ogg
 
-# Video files
+# Video
 *.mp4
 *.avi
 *.mov
 *.mkv
+
+# Images (optional)
+*.png
