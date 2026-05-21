@@ -56,7 +56,6 @@ print("Loading audio model...")
 audio_model = tf.keras.models.load_model(
     "audio_model/models/audio_model.keras"
 )
-)
 
 print("All models loaded successfully!")
 
